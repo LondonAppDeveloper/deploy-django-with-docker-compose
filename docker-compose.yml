@@ -8,3 +8,6 @@ services:
       - 8000:8000
     volumes:
       - ./app:/app
+    environment:
+      - SECRET_KEY=devsecretkey
+      - DEBUG=1
