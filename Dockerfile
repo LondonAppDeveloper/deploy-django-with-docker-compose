@@ -22,8 +22,6 @@ RUN python -m venv /py && \
     chown -R app:app /vol && \
     chmod -R 755 /vol
 
-VOLUME /vol/web
-
 ENV PATH="/py/bin:$PATH"
 
 USER app
