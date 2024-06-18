@@ -1,17 +1,43 @@
 from django.shortcuts import render
-from django.http import HttpResponse, JsonResponse
-from rest_framework.parsers import JSONParser
+from django.http import HttpResponse
 from core.models import UserIDList
 from core.models import Answers
 from core.serializers import UserIDListSerializer
 from core.serializers import AnswersSerializer
-from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
+import uuid
 # Create your views here.
 
+#Funktion zum Abrufen oder Erstellen einer UserID
+#zum testen:
+#$python manage.py shell
+#from core.models import UserIDList
+#from core.views import user_id
+# Teste das Abrufen einer bestehenden UserID
+#user = user_id(action="getDBObject", userID="efd69e9c-3945-4885-9a06-c9216efec82b")
+#print(user)  # Sollte None zurückgeben, wenn die UserID nicht existiert
+# Erstelle eine neue UserID
+#new_user_id = user_id(action="create")
+#print(new_user_id)  # Sollte eine neue UUID zurückgeben
+# Teste das Abrufen der gerade erstellten UserID
+#user = user_id(action="getDBObject", userID=new_user_id)
+#print(user)  # Sollte das UserIDList Objekt mit der neuen UUID zurückgeben
+
+
+def user_id(action, userID="efd69e9c-3945-4885-9a06-c9216efec82b"):
+    if action == "getDBObject":
+        if UserIDList.objects.filter(userid=userID).exists():
+            return UserIDList.objects.get(userid=userID)
+        else:
+            return None
+    elif action == "create":
+        userIDValue = str(uuid.uuid4())
+        UserIDList.objects.create(userid=userIDValue)
+        return userIDValue
+    return None
 
 class UserIDListAPIView(APIView):
 
@@ -76,7 +102,7 @@ class AnswersDetailsAPIView(APIView):
         try: 
             return Answers.objects.get(id=id)
         except Answers.DoesNotExist:
-            raise Http404
+             return HttpResponse(status=status.HTTP_404_NOT_FOUND)
 
     def get(self, request, id):
         answer = self.get_object(id)
