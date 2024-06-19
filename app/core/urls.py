@@ -18,6 +18,8 @@ urlpatterns = [
     path('answers/', AnswersAPIView.as_view()),
    #path('answersdetail/<int:pk>', answers_detail),
     path('answersdetail/<int:id>', AnswersDetailsAPIView.as_view()),
+    path('interviewdetails/<str:userid>/', AnswersAPIView.as_view(), name='interview-details'),
+
 
    
 ]

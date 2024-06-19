@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
 import uuid
+from .x_data_utils import get_all_interview_data_db, get_interview_config
 # Create your views here.
 
 #Funktion zum Abrufen oder Erstellen einer UserID
@@ -82,12 +83,24 @@ class UserIDListDetailsAPIView(APIView):
            id.delete()
            return Response(status=status.HTTP_204_NO_CONTENT)
         
+
 class AnswersAPIView(APIView):
 
-    def get(self, request):
-        answers=Answers.objects.all()
-        serializer=AnswersSerializer(answers, many=True)
-        return Response(serializer.data)
+    def get(self, request, userid):
+        try:
+            # Versuche, die Interviewdaten für den Benutzer abzurufen
+            answers = Answers.objects.get(userid__userid=userid)  # Hier wird nach der UserID in der UserIDList gesucht
+            serializer = AnswersSerializer(answers)
+            return Response(serializer.data)
+        
+        except Answers.DoesNotExist:
+            # Wenn keine Interviewdaten für den Benutzer vorhanden sind, rufe die Standarddaten ab
+            interview_data = get_all_interview_data_db(1)  # Annahme: Funktion zum Abrufen von Standarddaten
+            # Erstelle eine neue Instanz von Answers für den Benutzer mit den Standarddaten
+            user = UserIDList.objects.get(userid=userid)
+            answers = Answers.objects.create(userid=user, data=interview_data)
+            serializer = AnswersSerializer(answers)
+            return Response(serializer.data)
     
     def post(self, request):
         serializer=AnswersSerializer(data=request.data)

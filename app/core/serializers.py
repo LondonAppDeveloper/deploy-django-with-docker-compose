@@ -13,3 +13,4 @@ class AnswersSerializer(serializers.ModelSerializer):
         class Meta:
           model=Answers
           fields= ["userid", "question_type_id","data"]
+
