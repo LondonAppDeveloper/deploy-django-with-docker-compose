@@ -8,39 +8,40 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
+from core.x_data_utils import user_id
 import uuid
 # Create your views here.
 
 
-# Funktion zur Generierung einer neuen UserID
-def generate_user_id():
-    return str(uuid.uuid4())
+
 
 class UserIDListAPIView(APIView):
 
-    def get(self, request):
-        users=UserIDList.objects.all()
-        serializer=UserIDListSerializer(users, many=True)
+      def get(self, request):
+        users = UserIDList.objects.all()
+        serializer = UserIDListSerializer(users, many=True)
         return Response(serializer.data)
-    
-   
-    def post(self, request):
+
+      def post(self, request):
         # Überprüfen, ob eine UserID in der Anfrage übergeben wurde
         if 'userid' in request.data and request.data['userid']:
-            user_id = request.data['userid']
-            if UserIDList.objects.filter(userid=user_id).exists():
+            user_id_value = request.data['userid']
+            if UserIDList.objects.filter(userid=user_id_value).exists():
                 return Response({"error": "UserID already exists."}, status=status.HTTP_400_BAD_REQUEST)
         else:
             # Wenn keine UserID übergeben wurde, generiere automatisch eine neue
-            user_id = generate_user_id()
+            user_id_value = user_id(action="create")
 
         # Füge die generierte oder übergebene UserID zur Anfrage hinzu
-        request.data['userid'] = user_id
+        request.data['userid'] = user_id_value
         serializer = UserIDListSerializer(data=request.data)
 
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+       
 
 
 class UserIDListDetailsAPIView(APIView):
