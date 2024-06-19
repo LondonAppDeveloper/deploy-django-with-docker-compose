@@ -10,14 +10,17 @@ from core.views import AnswersAPIView
 from core.views import AnswersDetailsAPIView
 
 urlpatterns = [
-    path('userid/', useridlist),
-  # path('userid/', UserIDListAPIView.as_view()),
-   #path('useriddetail/<int:pk>', useridlist_detail),
-    path('useriddetail/<int:id>', UserIDListDetailsAPIView.as_view()),
-   #path('answers/', answers),
-    path('answers/', AnswersAPIView.as_view()),
-   #path('answersdetail/<int:pk>', answers_detail),
-    path('answersdetail/<int:id>', AnswersDetailsAPIView.as_view()),
+     #path('userid/', useridlist),
+     #path('userid/', UserIDListAPIView.as_view()),
+     #path('useriddetail/<int:pk>', useridlist_detail),
+     #path('answersdetail/<int:pk>', answers_detail),
+     #path('answers/', answers),
+     #path('useriddetail/<int:id>', UserIDListDetailsAPIView.as_view()),
+     #path('answersdetail/<int:pk>', answers_detail),
+      path('api/answers/', AnswersAPIView.as_view()),
+      path('api/answerslist/<int:id>', AnswersDetailsAPIView.as_view()),
+      path('api/useridlist/', UserIDListAPIView.as_view(), name='useridlist-list'),
+      path('api/useridlist/<int:id>/', UserIDListDetailsAPIView.as_view(), name='useridlist-details'),
 
    
 ]
