@@ -12,20 +12,6 @@ import uuid
 from .x_data_utils import get_all_interview_data_db, get_interview_config
 # Create your views here.
 
-#Funktion zum Abrufen oder Erstellen einer UserID
-#zum testen:
-#$python manage.py shell
-#from core.models import UserIDList
-#from core.views import user_id
-# Teste das Abrufen einer bestehenden UserID
-#user = user_id(action="getDBObject", userID="efd69e9c-3945-4885-9a06-c9216efec82b")
-#print(user)  # Sollte None zurückgeben, wenn die UserID nicht existiert
-# Erstelle eine neue UserID
-#new_user_id = user_id(action="create")
-#print(new_user_id)  # Sollte eine neue UUID zurückgeben
-# Teste das Abrufen der gerade erstellten UserID
-#user = user_id(action="getDBObject", userID=new_user_id)
-#print(user)  # Sollte das UserIDList Objekt mit der neuen UUID zurückgeben
 
 
 def user_id(action, userID="efd69e9c-3945-4885-9a06-c9216efec82b"):
@@ -39,6 +25,7 @@ def user_id(action, userID="efd69e9c-3945-4885-9a06-c9216efec82b"):
         UserIDList.objects.create(userid=userIDValue)
         return userIDValue
     return None
+
 
 class UserIDListAPIView(APIView):
 
@@ -55,7 +42,6 @@ class UserIDListAPIView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-
 
 class UserIDListDetailsAPIView(APIView):
       def get_object(self,id):
@@ -84,6 +70,8 @@ class UserIDListDetailsAPIView(APIView):
            return Response(status=status.HTTP_204_NO_CONTENT)
         
 
+# /interviwedetais/{userid}
+# gibt Alle Daten zum thema interview zurück (fragen, antworten, alles)
 class AnswersAPIView(APIView):
 
     def get(self, request, userid):
@@ -94,8 +82,7 @@ class AnswersAPIView(APIView):
             return Response(serializer.data)
         
         except Answers.DoesNotExist:
-            # Wenn keine Interviewdaten für den Benutzer vorhanden sind, rufe die Standarddaten ab
-            interview_data = get_all_interview_data_db(1)  # Annahme: Funktion zum Abrufen von Standarddaten
+            interview_data = get_all_interview_data_db()  # Annahme: Funktion zum Abrufen von Standarddaten
             # Erstelle eine neue Instanz von Answers für den Benutzer mit den Standarddaten
             user = UserIDList.objects.get(userid=userid)
             answers = Answers.objects.create(userid=user, data=interview_data)
@@ -110,31 +97,57 @@ class AnswersAPIView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-class AnswersDetailsAPIView(APIView):
-    def get_object(self, id):
-        try: 
-            return Answers.objects.get(id=id)
+
+# /interviwedetais/{userid}/{questionNR}
+# gibt die jeweiligen daten zur question mit questionNR zurück 
+# Post: /interviwedetais/{userid}/{questionNR} speichert die Antworten in data
+# Beispielpost : {  "new_data": ["Mathe", "Biologie", "Chemie"]  }
+class AnswersDetailAPIView(APIView):
+
+    def get(self, request, userid, question_number):
+        try:
+            
+            # Versuche, die Interviewdaten für den Benutzer und die Frage zu finden
+            answers = Answers.objects.get(userid__userid=userid)
+            
+            # Annahme: data ist ein JSONField, das `interview_config` enthält
+            interview_config = answers.data.get('interview_config', {})
+            
+            # Zugriff auf das entsprechende Element wie A1, A2, usw.
+            data = interview_config.get(f'A{question_number}', None)
+            
+            if data is None:
+                return Response({'error': f'Keine Daten gefunden für Frage A{question_number}.'}, status=status.HTTP_404_NOT_FOUND)
+            
+            return Response(data)
+        
         except Answers.DoesNotExist:
-             return HttpResponse(status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'Interviewantworten für diesen Benutzer nicht gefunden.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def get(self, request, id):
-        answer = self.get_object(id)
-        serializer = AnswersSerializer(answer)
-        return Response(serializer.data)   
-      
-    def put(self, request, id):
-        answer = self.get_object(id)
-        serializer = AnswersSerializer(answer, data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, id):
-        answer = self.get_object(id)
-        answer.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    def post(self, request, userid, question_number):
+        try:
+            # Versuche, die Interviewdaten für den Benutzer und die Frage zu aktualisieren
+            answers = Answers.objects.get(userid__userid=userid)
+            
+            # Neuer JSON-Wert aus dem Request
+            new_data = request.data.get('new_data', {})
+            
+            # Update des entsprechenden Elements wie A1, A2, usw. direkt in data
+            answers.data[f'A{question_number}'] = new_data
+            
+            # Speichern der aktualisierten Daten zurück in der Datenbank
+            answers.save()
+            
+            return Response({'success': f'Daten für Frage A{question_number} erfolgreich aktualisiert.'}, status=status.HTTP_200_OK)
+        
+        except Answers.DoesNotExist:
+            return Response({'error': 'Interviewantworten für diesen Benutzer nicht gefunden.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET', 'POST'])
 def useridlist(request):
