@@ -9,26 +9,17 @@ from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework import status
 from rest_framework.views import APIView
+<<<<<<< HEAD
 import jwt, datetime
+=======
+from core.x_data_utils import user_id
+>>>>>>> main
 import uuid
 # Create your views here.
 
-#Funktion zum Abrufen oder Erstellen einer UserID
-#zum testen:
-#$python manage.py shell
-#from core.models import UserIDList
-#from core.views import user_id
-# Teste das Abrufen einer bestehenden UserID
-#user = user_id(action="getDBObject", userID="efd69e9c-3945-4885-9a06-c9216efec82b")
-#print(user)  # Sollte None zurückgeben, wenn die UserID nicht existiert
-# Erstelle eine neue UserID
-#new_user_id = user_id(action="create")
-#print(new_user_id)  # Sollte eine neue UUID zurückgeben
-# Teste das Abrufen der gerade erstellten UserID
-#user = user_id(action="getDBObject", userID=new_user_id)
-#print(user)  # Sollte das UserIDList Objekt mit der neuen UUID zurückgeben
 
 
+<<<<<<< HEAD
 class RegisterUserView(APIView):
     def post(self, request):
         serializer = UserSerializer(data=request.data)
@@ -80,22 +71,48 @@ class UserView(APIView):
         serializer = UserSerializer(user)
         return Response(serializer.data)
     
+=======
+>>>>>>> main
 
 class UserIDListAPIView(APIView):
 
-    def get(self, request):
-        users=UserIDList.objects.all()
-        serializer=UserIDListSerializer(users, many=True)
+      def get(self, request):
+        users = UserIDList.objects.all()
+        serializer = UserIDListSerializer(users, many=True)
         return Response(serializer.data)
+<<<<<<< HEAD
     
     def post(self, request):
         userIDValue = str(uuid.uuid4())
         request.data["userid"] = userIDValue
         serializer=UserIDListSerializer(data=request.data)
+=======
+
+      def post(self, request):
+        # Überprüfen, ob eine UserID in der Anfrage übergeben wurde
+        if 'userid' in request.data and request.data['userid']:
+            user_id_value = request.data['userid']
+            if UserIDList.objects.filter(userid=user_id_value).exists():
+                return Response({"error": "UserID already exists."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            # Wenn keine UserID übergeben wurde, generiere automatisch eine neue
+            user_id_value = user_id(action="create")
+
+        # Füge die generierte oder übergebene UserID zur Anfrage hinzu
+        request.data['userid'] = user_id_value
+        serializer = UserIDListSerializer(data=request.data)
+>>>>>>> main
 
         if serializer.is_valid(raise_exception=True):
             serializer.save()
+<<<<<<< HEAD
             return Response(serializer.data, status=status.HTTP_201_CREATED)    
+=======
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+       
+>>>>>>> main
 
 
 class UserIDListDetailsAPIView(APIView):
