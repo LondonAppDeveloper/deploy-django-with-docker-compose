@@ -283,15 +283,15 @@ def get_programs(my_list=['Management, Economics and Social Science: Gut','Volks
     return programs, fits
 
 def get_all_interview_data_db(question_type_id):
-    data={"A1": ["Biologie", "Chemie"], 
-            "A2": ["KI ausprobieren", "Mathematische Modelle entwickeln", "Mathe anwenden", "Schwere Matheprobleme lösen", "Programmieren"], 
+    data={"A1": [], 
+            "A2": [], 
             "A3": [], 
-            "A4": "1.0", 
-            "A5": "Manager short-term and ceo long-term", 
-            "A6": "Ich bin ein Problemlöser", 
-            "A7": ["Algorithmen", "Datenanalyse", "IT Projektmanagement", "Start-Up Gründung"], 
-            "A8": ["Auf Englisch und Deutsch studieren"], 
-            "A9": "Ja gerne", 
+            "A4": "", 
+            "A5": "", 
+            "A6": "", 
+            "A7": [], 
+            "A8": [], 
+            "A9": "", 
             "P1": [], 
             "S1": [], 
             "ANALYSIS1": [], 
