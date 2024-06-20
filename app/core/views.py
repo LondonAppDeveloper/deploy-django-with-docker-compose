@@ -72,36 +72,85 @@ class UserIDListDetailsAPIView(APIView):
 
 # /interviwedetais/{userid}
 # gibt Alle Daten zum thema interview zurück (fragen, antworten, alles)
+
 class AnswersAPIView(APIView):
 
-    def get(self, request, userid):
-        try:
-            # Versuche, die Interviewdaten für den Benutzer abzurufen
-            answers = Answers.objects.get(userid__userid=userid)  # Hier wird nach der UserID in der UserIDList gesucht
-            serializer = AnswersSerializer(answers)
-            return Response(serializer.data)
-        
-        except Answers.DoesNotExist:
-            interview_data = get_all_interview_data_db()  # Annahme: Funktion zum Abrufen von Standarddaten
-            # Erstelle eine neue Instanz von Answers für den Benutzer mit den Standarddaten
-            user = UserIDList.objects.get(userid=userid)
-            answers = Answers.objects.create(userid=user, data=interview_data)
-            serializer = AnswersSerializer(answers)
-            return Response(serializer.data)
-    
     def post(self, request):
-        serializer=AnswersSerializer(data=request.data)
+        try:
+            # Überprüfe, ob der Body der Anfrage leer ist
+            if not request.data:
+                return Response({'error': 'Der Anfrage-Body darf nicht leer sein.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            # Extrahiere die erforderlichen Parameter aus der Anfrage
+            request_data = request.data
+            userid = request_data.get('userid')
+            question_type_id = request_data.get('question_type_id')
+            question_nr = request_data.get('question_nr')
+            request_type = request_data.get('request_type')
+            data_to_post = request_data.get('dataToPost', None)
+            
+            if not userid or not question_type_id or not question_nr or not request_type:
+                return Response({'error': 'Erforderliche Parameter fehlen.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Verarbeite die Anfrage basierend auf dem request_type
+            if request_type == 'get':
+                # Versuche, die Interviewdaten für den Benutzer abzurufen
+                try:
+                    #answers = Answers.objects.get(userid__userid=userid)
+                    #serializer = AnswersSerializer(answers)
+                    #return Response(serializer.data)
+                    answers = Answers.objects.get(userid__userid=userid)
+                    # Annahme: data ist ein JSONField, das `interview_config` enthält
+                    interview_config = answers.data.get('interview_config', {})
+                    # Zugriff auf das entsprechende Element wie A1, A2, usw.
+                    data = interview_config.get(f'A{question_nr}', None)
+                    if data is None:
+                        return Response({'error': f'Keine Daten gefunden für Frage A{question_nr}.'}, status=status.HTTP_404_NOT_FOUND)
+            
+                    return Response(data)
+                
+                except Answers.DoesNotExist:
+                    interview_data = get_all_interview_data_db(question_type_id)  # Annahme: Funktion zum Abrufen von Standarddaten
+                    # Erstelle eine neue Instanz von Answers für den Benutzer mit den Standarddaten
+                    user = UserIDList.objects.get(userid=userid)
+                    answers = Answers.objects.create(userid=user, data=interview_data)
+                    serializer = AnswersSerializer(answers)
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+            elif request_type == 'post':
+                if data_to_post is None:
+                    return Response({'error': 'Keine neuen Daten bereitgestellt.'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                #kann evtl raus hier drunter
+                if not isinstance(data_to_post, list):
+                    return Response({'error': 'Die neuen Daten müssen eine Liste sein.'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                # Versuche, die Interviewdaten für den Benutzer abzurufen
+                try:
+                    answers = Answers.objects.get(userid__userid=userid)
+                except Answers.DoesNotExist:
+                    return Response({'error': 'Interviewantworten für diesen Benutzer nicht gefunden.'}, status=status.HTTP_404_NOT_FOUND)
+                
+                # Aktualisiere die Daten für die entsprechende Frage
+                answers.data[f'A{question_nr}'] = data_to_post
+                answers.save()
+                return Response({'success': f'Daten für Frage A{question_nr} erfolgreich aktualisiert.'}, status=status.HTTP_200_OK)
+            
+            else:
+                return Response({'error': 'Ungültiger request_type.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+
+
+
 
 # /interviwedetais/{userid}/{questionNR}
 # gibt die jeweiligen daten zur question mit questionNR zurück 
 # Post: /interviwedetais/{userid}/{questionNR} speichert die Antworten in data
 # Beispielpost : {  "new_data": ["Mathe", "Biologie", "Chemie"]  }
+
 class AnswersDetailAPIView(APIView):
 
     def get(self, request, userid, question_number):
