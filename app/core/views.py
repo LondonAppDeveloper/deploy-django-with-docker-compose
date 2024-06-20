@@ -2,12 +2,14 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from core.models import UserIDList
 from core.models import Answers
-from core.serializers import UserIDListSerializer
-from core.serializers import AnswersSerializer
+from core.models import User
+from core.serializers import *
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework import status
 from rest_framework.views import APIView
+import jwt, datetime
 import uuid
 # Create your views here.
 
@@ -27,17 +29,57 @@ import uuid
 #print(user)  # Sollte das UserIDList Objekt mit der neuen UUID zurückgeben
 
 
-def user_id(action, userID="efd69e9c-3945-4885-9a06-c9216efec82b"):
-    if action == "getDBObject":
-        if UserIDList.objects.filter(userid=userID).exists():
-            return UserIDList.objects.get(userid=userID)
-        else:
-            return None
-    elif action == "create":
-        userIDValue = str(uuid.uuid4())
-        UserIDList.objects.create(userid=userIDValue)
-        return userIDValue
-    return None
+class RegisterUserView(APIView):
+    def post(self, request):
+        serializer = UserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
+    
+class LoginUserView(APIView):
+    def post(self, request):
+        email = request.data["email"]
+        password = request.data["password"]
+
+        user = User.objects.filter(email=email).first()
+
+        if user is None:
+            raise AuthenticationFailed("User not found!")
+        
+        if not user.check_password(password):
+            raise AuthenticationFailed("Incorrect Password!")
+        
+        payload = {
+            "id":user.id,
+            "exp":datetime.datetime.now() + datetime.timedelta(minutes=60),
+            "iat":datetime.datetime.now()
+        }
+        encoded_token = jwt.encode(payload, "secret", algorithm="HS256")
+        decoded_token = jwt.decode(encoded_token, "secret", algorithms=["HS256"])
+
+        response = Response()
+        response.set_cookie(key="jwt",value=encoded_token,httponly=True)
+        response.data = {
+            "jwt":encoded_token
+        }
+        return response
+
+class UserView(APIView):
+    def get(self, request):
+        token = request.COOKIES.get("jwt")
+
+        if not token:
+            raise AuthenticationFailed("Unauthenticated")
+        try:
+            payload = jwt.decode(token, "secret", algorithms=["HS256"])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Unauthenticated")
+        
+        user = User.objects.filter(id=payload["id"])
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+    
 
 class UserIDListAPIView(APIView):
 
@@ -47,13 +89,13 @@ class UserIDListAPIView(APIView):
         return Response(serializer.data)
     
     def post(self, request):
+        userIDValue = str(uuid.uuid4())
+        request.data["userid"] = userIDValue
         serializer=UserIDListSerializer(data=request.data)
 
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+            return Response(serializer.data, status=status.HTTP_201_CREATED)    
 
 
 class UserIDListDetailsAPIView(APIView):
@@ -208,3 +250,6 @@ def answers_detail(request, pk):
     elif request.method=='DELETE':
         answer.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+    
