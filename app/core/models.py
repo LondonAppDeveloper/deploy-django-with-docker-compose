@@ -1,6 +1,7 @@
 from django.db import models
 
 
+
 class UserIDList(models.Model):
      created_at = models.DateTimeField(auto_now_add=True)
      updated_at = models.DateTimeField(auto_now=True)
@@ -15,5 +16,6 @@ class Answers(models.Model):
     data = models.JSONField(default=list,null=True,blank=True)
     def __str__(self):
         return self.userid.userid
+
 
 

@@ -7,6 +7,7 @@ from core.models import UserIDList, Answers #core.models could change e.g. api.m
 #from markdown import markdown # type: ignore
 import uuid
 import markdown
+
 # copy to models.py the following lines and uncomment those lines
 ################ models.py ####################
 # class UserIDList(models.Model):
@@ -54,16 +55,18 @@ def get_interview_config_db(request, question_type_id, question_id, action='getD
     return object, config
 
 def user_id(action, request=[], userID="efd69e9c-3945-4885-9a06-c9216efec82b"):
-    if action =="getDBObject":
-        if UserIDList.objects.filter(userid = userID).exists():
+    if action == "getDBObject":
+        # Überprüfe, ob eine UserID mit der gegebenen userID existiert
+        if UserIDList.objects.filter(userid=userID).exists():
             return UserIDList.objects.get(userid=userID)
         else:
             return None
     elif action == "create":
-        userIDValue = str(uuid.uuid4())
-        UserIDList.objects.create(userid=userIDValue)
-        return userIDValue      
-    return None 
+        # Erzeuge eine neue UserID
+        userIDValue = str(uuid.uuid4())  # Generiere eine UUID
+        UserIDList.objects.create(userid=userIDValue)  # Speichere die neue UserID in der Datenbank
+        return userIDValue  # Gib die neu generierte UserID zurück
+    return None  # Falls ein ungültiger action-Wert übergeben wurde, gib None zurück
 
 def get_interview_config(question_type_id, question_id, object=None):
     if not question_type_id:

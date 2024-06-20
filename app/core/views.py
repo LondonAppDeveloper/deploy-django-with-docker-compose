@@ -8,40 +8,42 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
+from core.x_data_utils import user_id
 import uuid
 from .x_data_utils import get_all_interview_data_db, get_interview_config
 # Create your views here.
 
 
 
-def user_id(action, userID="efd69e9c-3945-4885-9a06-c9216efec82b"):
-    if action == "getDBObject":
-        if UserIDList.objects.filter(userid=userID).exists():
-            return UserIDList.objects.get(userid=userID)
-        else:
-            return None
-    elif action == "create":
-        userIDValue = str(uuid.uuid4())
-        UserIDList.objects.create(userid=userIDValue)
-        return userIDValue
-    return None
 
 
 class UserIDListAPIView(APIView):
 
-    def get(self, request):
-        users=UserIDList.objects.all()
-        serializer=UserIDListSerializer(users, many=True)
+      def get(self, request):
+        users = UserIDList.objects.all()
+        serializer = UserIDListSerializer(users, many=True)
         return Response(serializer.data)
-    
-    def post(self, request):
-        serializer=UserIDListSerializer(data=request.data)
+
+      def post(self, request):
+        # Überprüfen, ob eine UserID in der Anfrage übergeben wurde
+        if 'userid' in request.data and request.data['userid']:
+            user_id_value = request.data['userid']
+            if UserIDList.objects.filter(userid=user_id_value).exists():
+                return Response({"error": "UserID already exists."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            # Wenn keine UserID übergeben wurde, generiere automatisch eine neue
+            user_id_value = user_id(action="create")
+
+        # Füge die generierte oder übergebene UserID zur Anfrage hinzu
+        request.data['userid'] = user_id_value
+        serializer = UserIDListSerializer(data=request.data)
 
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+       
 
 class UserIDListDetailsAPIView(APIView):
       def get_object(self,id):
