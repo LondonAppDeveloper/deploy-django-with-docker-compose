@@ -128,7 +128,7 @@ class AnswersAPIView(APIView):
                     return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             # GET QUESTION INFOS TO QUESTION NR
-            # test with : {"userid": "{userid}", "question_nr": 1, question_type_id": 1, "request_type": "get"}
+            # test with : {"userid": "{userid}", "question_nr": 1, "question_type_id": 1, "request_type": "get"}
             if request_type == 'get':
                 try:
                     answers = Answers.objects.get(userid__userid=userid)
@@ -148,7 +148,7 @@ class AnswersAPIView(APIView):
                     return Response(serializer.data, status=status.HTTP_201_CREATED)
             
             # POST SELECTED ANSWERS TO DATA 
-            # test with : {"userid": "{userid}", "question_nr": 1, question_type_id": 1, "request_type": "post", "dataToPost": ["Mathe", "Biologie", "Chemie"] }
+            # test with : {"userid": "{userid}", "question_nr": 1, "question_type_id": 1, "request_type": "post", "dataToPost": ["Mathe", "Biologie", "Chemie"] }
             if request_type == 'post':
                 if data_to_post is None:
                     return Response({'error': 'Keine neuen Daten bereitgestellt.'}, status=status.HTTP_400_BAD_REQUEST)
