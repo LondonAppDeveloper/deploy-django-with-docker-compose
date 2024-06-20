@@ -70,8 +70,9 @@ class UserIDListDetailsAPIView(APIView):
            return Response(status=status.HTTP_204_NO_CONTENT)
         
 
-# /interviwedetais/{userid}
-# gibt Alle Daten zum thema interview zurück (fragen, antworten, alles)
+
+# Man muss eine Post anfrage schicken und daten übergeben um Daten zu erhalten
+# wie in den beispielen unten erklärt
 class AnswersAPIView(APIView):
 
     def post(self, request):
@@ -91,14 +92,22 @@ class AnswersAPIView(APIView):
             if not userid or not question_type_id or not request_type:
                 return Response({'error': 'Erforderliche Parameter fehlen.'}, status=status.HTTP_400_BAD_REQUEST)
             
-            # GET CONFIG INFOS
+            try:
+                    answers = Answers.objects.get(userid__userid=userid)
+            except Answers.DoesNotExist:
+                    # Wenn keine Daten vorhanden sind, erstelle eine neue Instanz mit Standarddaten
+                    interview_data = get_all_interview_data_db(question_type_id)
+                    user = UserIDList.objects.get(userid=userid)
+                    answers = Answers.objects.create(userid=user, data=interview_data)
+
+############ GET CONFIG INFOS ############
             # test with : {"userid": "{userid}","question_type_id": 1,"request_type": "get"}
             if request_type == 'get' and not question_nr :
                     answers = Answers.objects.get(userid__userid=userid)
                     interview_config = answers.data.get('interview_config', {})
                     return Response(interview_config)
             
-            # GET SELECTED ANSWERS
+############# GET SELECTED ANSWERS ############
             # test with : {"userid": "{userid}","question_type_id": 1,"request_type": "getSelectedAnswers"}
             if request_type == 'getSelectedAnswers' :
                 try:
@@ -126,8 +135,8 @@ class AnswersAPIView(APIView):
         
                 except Exception as e:
                     return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-            # GET QUESTION INFOS TO QUESTION NR
+                
+############# GET QUESTION INFOS TO QUESTION NR ############
             # test with : {"userid": "{userid}", "question_nr": 1, "question_type_id": 1, "request_type": "get"}
             if request_type == 'get':
                 try:
@@ -147,15 +156,11 @@ class AnswersAPIView(APIView):
                     serializer = AnswersSerializer(answers)
                     return Response(serializer.data, status=status.HTTP_201_CREATED)
             
-            # POST SELECTED ANSWERS TO DATA 
+############# POST SELECTED ANSWERS TO DATA  ############
             # test with : {"userid": "{userid}", "question_nr": 1, "question_type_id": 1, "request_type": "post", "dataToPost": ["Mathe", "Biologie", "Chemie"] }
             if request_type == 'post':
                 if data_to_post is None:
                     return Response({'error': 'Keine neuen Daten bereitgestellt.'}, status=status.HTTP_400_BAD_REQUEST)
-                
-                #kann evtl raus hier drunter
-                if not isinstance(data_to_post, list):
-                    return Response({'error': 'Die neuen Daten müssen eine Liste sein.'}, status=status.HTTP_400_BAD_REQUEST)
                 
                 # Versuche, die Interviewdaten für den Benutzer abzurufen
                 try:
@@ -178,10 +183,7 @@ class AnswersAPIView(APIView):
 
 
 
-# /interviwedetais/{userid}/{questionNR}
-# gibt die jeweiligen daten zur question mit questionNR zurück 
-# Post: /interviwedetais/{userid}/{questionNR} speichert die Antworten in data
-# Beispielpost : {  "new_data": ["Mathe", "Biologie", "Chemie"]  }
+
 class AnswersDetailAPIView(APIView):
 
     def get(self, request, userid, question_number):
