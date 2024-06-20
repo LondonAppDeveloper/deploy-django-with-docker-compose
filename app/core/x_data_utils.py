@@ -6,7 +6,7 @@ from django.db import models
 from core.models import UserIDList, Answers #core.models could change e.g. api.models
 #from markdown import markdown # type: ignore
 import uuid
-
+import markdown
 # copy to models.py the following lines and uncomment those lines
 ################ models.py ####################
 # class UserIDList(models.Model):
