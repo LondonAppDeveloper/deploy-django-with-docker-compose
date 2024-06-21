@@ -64,7 +64,6 @@ def user_id(action, request=[], userID="efd69e9c-3945-4885-9a06-c9216efec82b"):
     elif action == "create":
         # Erzeuge eine neue UserID
         userIDValue = str(uuid.uuid4())  # Generiere eine UUID
-        UserIDList.objects.create(userid=userIDValue)  # Speichere die neue UserID in der Datenbank
         return userIDValue  # Gib die neu generierte UserID zurück
     return None  # Falls ein ungültiger action-Wert übergeben wurde, gib None zurück
 
