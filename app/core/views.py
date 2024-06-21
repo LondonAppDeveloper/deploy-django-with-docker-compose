@@ -14,7 +14,6 @@ from core.x_data_utils import user_id
 import jwt, datetime
 # Create your views here.
 class RegisterUserAPIView(APIView):
-    @method_decorator(api_view(['POST']))
     def post(self, request):
 
         serializer = UserSerializer(data=request.data)
@@ -24,7 +23,6 @@ class RegisterUserAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginUserAPIView(APIView):
-    @method_decorator(api_view(['POST']))
     def post(self, request):
         email = request.data['email']
         password = request.data['password']
@@ -37,7 +35,7 @@ class LoginUserAPIView(APIView):
             raise AuthenticationFailed('Incorrect password!')
         payload = {
             'id': user.id,
-            'exp': datetime.datetime.now() + datetime.timedelta(days=1),
+            'exp': datetime.datetime.now() + datetime.timedelta(minutes=60),
             'iat': datetime.datetime.now()
         }
 
@@ -50,7 +48,6 @@ class LoginUserAPIView(APIView):
         return response
 
 class LogoutUserAPIView(APIView):
-    @method_decorator(api_view(['POST']))
     def post(self, request):
         response = Response()
         response.delete_cookie('jwt')
@@ -59,7 +56,6 @@ class LogoutUserAPIView(APIView):
         }
         return response
 class UserView(APIView):
-    @method_decorator(api_view(['GET']))
     def get(self, request):
         token = request.COOKIES.get('jwt')
 
@@ -76,7 +72,6 @@ class UserView(APIView):
         return Response(serializer.data)
 
 class UserIDListAPIView(APIView):
-        @method_decorator(api_view(['GET']))
         def get(self, request):
           users = UserIDList.objects.all()
           serializer = UserIDListSerializer(users, many=True)
@@ -120,18 +115,17 @@ class UserIDListAPIView(APIView):
 
 
 class UserIDListDetailsAPIView(APIView):
-        @method_decorator(api_view(['GET']))
         def get_object(self,id):
             try: 
                 return UserIDList.objects.get(id=id)
             except UserIDList.DoesNotExist:
                 return HttpResponse(status=status.HTTP_404_NOT_FOUND)
-        @method_decorator(api_view(['GET']))
         def get(self, request, id):
           id=self.get_object(id)
+          if id.status_code==status.HTTP_404_NOT_FOUND:
+            return Response({"message": "UserID not found!"}, status=status.HTTP_404_NOT_FOUND)
           serializer=UserIDListSerializer(id)
           return Response(serializer.data)   
-        @method_decorator(api_view(['PUT']))
         def put(self, request, id):
             id=self.get_object(id)
             serializer=UserIDListSerializer(id,data=request.data)
@@ -140,27 +134,34 @@ class UserIDListDetailsAPIView(APIView):
               serializer.save()
               return Response(serializer.data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        @method_decorator(api_view(['DELETE']))
         def delete(self, request, id):
              id=self.get_object(id)
              id.delete()
              return Response(status=status.HTTP_204_NO_CONTENT)
 
-class   AnswersAPIView(APIView):
-    @method_decorator(api_view(['GET']))
+class AnswersAPIView(APIView):
     def get(self, request):
-        answers=Answers.objects.all()
-        serializer=AnswersSerializer(answers, many=True)
+        answers = Answers.objects.all()
+        serializer = AnswersSerializer(answers, many=True)
         return Response(serializer.data)
-    @method_decorator(api_view(['POST']))
+
     def post(self, request):
-        serializer=AnswersSerializer(data=request.data)
+        token = request.COOKIES.get('UserID')
+        if token:
+            token = jwt.decode(token, "secret", algorithms=["HS256"])
+            userIDint = token["userid"]
+            try:
+                user = UserIDList.objects.get(userid=userIDint)
+                request.data["userid"] = user.id
+            except UserIDList.DoesNotExist:
+                return Response({"error": "UserID not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = AnswersSerializer(data=request.data)
 
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
 class AnswersDetailsAPIView(APIView):
     def get_object(self, id):
         try: 
@@ -187,88 +188,3 @@ class AnswersDetailsAPIView(APIView):
         answer.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-@api_view(['GET', 'POST'])
-def useridlist(request):
-
-    if request.method=='GET':
-        users=UserIDList.objects.all()
-        print(users)  # Debug-Ausgabe der QuerySet-Objekte
-        serializer=UserIDListSerializer(users, many=True)
-        print(serializer.data)  # Debug-Ausgabe der serialisierten Daten
-        return Response(serializer.data)
-    
-    elif request.method=='POST':
-    
-        serializer=UserIDListSerializer(data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['GET', 'POST'])  
-def answers(request):
-
-    if request.method=='GET':
-        answers=Answers.objects.all()
-        print(answers)  # Debug-Ausgabe der QuerySet-Objekte
-        serializer=AnswersSerializer(answers, many=True)
-        print(serializer.data)  # Debug-Ausgabe der serialisierten Daten
-        return Response(serializer.data)
-    
-    elif request.method=='POST':
-        
-        serializer=AnswersSerializer(data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-
-@api_view(['GET', 'POST', 'DELETE'])  
-def useridlist_detail(request, pk):
-    try:
-        id=UserIDList.objects.get(pk=pk)
-    except UserIDList.DoesNotExist:
-        return HttpResponse(status=status.HTTP_404_NOT_FOUND)
-    
-    if request.method=='GET':
-        serializer=UserIDListSerializer(id)
-        return Response(serializer.data)
-    
-    elif request.method=='PUT':
-     
-        serializer=UserIDListSerializer(id,data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    elif request.method=='DELETE':
-        id.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-    
-@api_view(['GET', 'POST', 'DELETE'])  
-def answers_detail(request, pk):
-    try:
-        answer=Answers.objects.get(pk=pk)
-    except Answers.DoesNotExist:
-        return HttpResponse(status=status.HTTP_404_NOT_FOUND)
-    
-    if request.method=='GET':
-        serializer=AnswersSerializer(answer)
-        return Response(serializer.data)
-    
-    elif request.method=='PUT':
-      
-        serializer=AnswersSerializer(answer,data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    elif request.method=='DELETE':
-        answer.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
