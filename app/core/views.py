@@ -76,13 +76,13 @@ class UserView(APIView):
         return Response(serializer.data)
 
 class UserIDListAPIView(APIView):
-        def get(self, request):
+     def get(self, request):
           users = UserIDList.objects.all()
           serializer = UserIDListSerializer(users, many=True)
           return Response(serializer.data)
         
 
-        def post(self, request):
+     def post(self, request):
             # Überprüfen, ob eine UserID in der Anfrage übergeben wurde
             if request.COOKIES.get('UserID'):
                 return Response({"error": "UserID already exists."}, status=status.HTTP_400_BAD_REQUEST)
