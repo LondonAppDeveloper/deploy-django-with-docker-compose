@@ -84,8 +84,8 @@ class UserIDListAPIView(APIView):
 
         def post(self, request):
             # Überprüfen, ob eine UserID in der Anfrage übergeben wurde
-            if request.COOKIES.get('UserID'):
-                return Response({"error": "UserID already exists."}, status=status.HTTP_400_BAD_REQUEST)
+            #if request.COOKIES.get('UserID'):
+            #    return Response({"error": "UserID already exists."}, status=status.HTTP_400_BAD_REQUEST)
             if ('userid' in request.data and request.data['userid']):
                 user_id_value = request.data['userid']
                 if UserIDList.objects.filter(userid=user_id_value).exists():
