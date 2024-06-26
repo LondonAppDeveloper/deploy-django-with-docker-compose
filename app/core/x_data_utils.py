@@ -31,12 +31,13 @@ markdown_flag = True
 # http://127.0.0.1:8000/api/question/1/8/
 def answer_post_view(question_type_id, question_id, action='getDBObject', userID="efd69e9c-3945-4885-9a06-c9216efec82b", answer=""):
     obj, config = get_interview_config_db({}, question_type_id, question_id, action=action, userID=userID) 
-    set_answer(obj, config, answer)
+    obj = set_answer(obj, config, answer)
     return obj, config
 
 def set_answer(object, config, answer):
     object.data[config['answer_label']] = answer
     object.save()
+    return object
 
 ### main function to get DB-data ###################### 
 # http://127.0.0.1:8000/api/question/1/8/

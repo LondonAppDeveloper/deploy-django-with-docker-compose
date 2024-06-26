@@ -11,7 +11,8 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.exceptions import AuthenticationFailed
 import jwt, datetime
-from .x_data_utils import get_all_interview_data_db, get_interview_config,  user_id
+from django.forms.models import model_to_dict
+from .x_data_utils import get_all_interview_data_db, get_interview_config_db,  user_id, answer_post_view
 
 # Create your views here.
 class RegisterUserAPIView(APIView):
@@ -176,10 +177,15 @@ class AnswersAPIView(APIView):
 ############ GET CONFIG INFOS ############
             # test with : {"userid": "{userid}","question_type_id": 1,"request_type": "get"}
             if request_type == 'get' and not question_nr :
-                    answers = Answers.objects.get(userid__userid=userid)
-                    interview_config = answers.data.get('interview_config', {})
-                    return Response(interview_config)
-            
+                object, config = get_interview_config_db(request_type, question_type_id, 1, "getDBObject", userid)
+                # Convert the Answers object to a dictionary using model_to_dict
+                answer_dict = model_to_dict(object)
+                # Combine the serialized Answers object with the config
+                result = {
+                    'object': answer_dict,
+                    'config': config
+                }
+                return Response(result, status=200)
 ############# GET SELECTED ANSWERS ############
             # test with : {"userid": "{userid}","question_type_id": 1,"request_type": "getSelectedAnswers"}
             if request_type == 'getSelectedAnswers' :
@@ -235,17 +241,8 @@ class AnswersAPIView(APIView):
                 if data_to_post is None:
                     return Response({'error': 'Keine neuen Daten bereitgestellt.'}, status=status.HTTP_400_BAD_REQUEST)
                 
-                # Versuche, die Interviewdaten für den Benutzer abzurufen
-                try:
-                    answers = Answers.objects.get(userid__userid=userid)
-                except Answers.DoesNotExist:
-                    return Response({'error': 'Interviewantworten für diesen Benutzer nicht gefunden.'}, status=status.HTTP_404_NOT_FOUND)
-                
-                # Aktualisiere die Daten für die entsprechende Frage
-                answers.data[f'A{question_nr}'] = data_to_post
-                answers.save()
+                answer_post_view(question_type_id, question_nr, action='getDBObject', userID=userid, answer=data_to_post)
                 return Response({'success': f'Daten für Frage A{question_nr} erfolgreich aktualisiert.'}, status=status.HTTP_200_OK)
-            
             else:
                 return Response({'error': 'Ungültiger request_type.'}, status=status.HTTP_400_BAD_REQUEST)
         
