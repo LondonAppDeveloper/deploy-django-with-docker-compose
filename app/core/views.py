@@ -176,65 +176,15 @@ class AnswersAPIView(APIView):
 
 ############ GET CONFIG INFOS ############
             # test with : {"userid": "{userid}","question_type_id": 1,"request_type": "get"}
-            if request_type == 'get' and not question_nr :
-                object, config = get_interview_config_db(request_type, question_type_id, 1, "getDBObject", userid)
+            if request_type == 'get' :
+                object, config = get_interview_config_db(request_type, question_type_id, question_nr, "getDBObject", userid)
                 # Convert the Answers object to a dictionary using model_to_dict
                 answer_dict = model_to_dict(object)
                 # Combine the serialized Answers object with the config
-                result = {
-                    'object': answer_dict,
-                    'config': config
-                }
-                return Response(result, status=200)
-############# GET SELECTED ANSWERS ############
-            # test with : {"userid": "{userid}","question_type_id": 1,"request_type": "getSelectedAnswers"}
-            if request_type == 'getSelectedAnswers' :
-                try:
-                    answers = Answers.objects.get(userid__userid=userid)
-                    data = answers.data
-                    interview_config = data.get('interview_config', {})
-                 # Annahme: 'real_num_of_questions' gibt die Anzahl der Fragen an
-                    real_num_of_questions = interview_config.get('real_num_of_questions', 0)
-                    selected_answers = {}
+
+                return Response(config, status=200)
             
-                    # Iteriere über die Fragen von A1 bis Ax (basierend auf real_num_of_questions)
-                    for i in range(1, real_num_of_questions + 1):
-                        key = f'A{i}'
-                
-                        if key in interview_config:
-                            question_title = interview_config[key].get('question_title', f'Frage A{i}')
-                            selected_answers[question_title] = data.get(f'A{i}', [])
-                        else:
-                            selected_answers[f'Frage A{i}'] = []
-            
-                    return Response(selected_answers)
-        
-                except Answers.DoesNotExist:
-                    return Response({'error': 'Interviewantworten für diesen Benutzer nicht gefunden.'}, status=status.HTTP_404_NOT_FOUND)
-        
-                except Exception as e:
-                    return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                
-############# GET QUESTION INFOS TO QUESTION NR ############
-            # test with : {"userid": "{userid}", "question_nr": 1, "question_type_id": 1, "request_type": "get"}
-            if request_type == 'get':
-                try:
-                    answers = Answers.objects.get(userid__userid=userid)
-                    interview_config = answers.data.get('interview_config', {})
-                    data = interview_config.get(f'A{question_nr}', None)
-                    if data is None:
-                        return Response({'error': f'Keine Daten gefunden für Frage A{question_nr}.'}, status=status.HTTP_404_NOT_FOUND)
-            
-                    return Response(data)
-                
-                except Answers.DoesNotExist:
-                    interview_data = get_all_interview_data_db(question_type_id)  # Annahme: Funktion zum Abrufen von Standarddaten
-                    # Erstelle eine neue Instanz von Answers für den Benutzer mit den Standarddaten
-                    user = UserIDList.objects.get(userid=userid)
-                    answers = Answers.objects.create(userid=user, data=interview_data)
-                    serializer = AnswersSerializer(answers)
-                    return Response(serializer.data, status=status.HTTP_201_CREATED)
-            
+  
 ############# POST SELECTED ANSWERS TO DATA  ############
             # test with : {"userid": "{userid}", "question_nr": 1, "question_type_id": 1, "request_type": "post", "dataToPost": ["Mathe", "Biologie", "Chemie"] }
             if request_type == 'post':
