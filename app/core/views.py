@@ -163,7 +163,7 @@ class AnswersAPIView(APIView):
             request_type = request_data.get('request_type')
             data_to_post = request_data.get('dataToPost', None)
             
-            if not userid or not question_type_id or not request_type:
+            if not userid or not question_type_id or not request_type or not question_id:
                 return Response({'error': 'Erforderliche Parameter fehlen.'}, status=status.HTTP_400_BAD_REQUEST)
             
             try:
@@ -175,13 +175,9 @@ class AnswersAPIView(APIView):
                     answers = Answers.objects.create(userid=user, data=interview_data)
 
 ############ GET CONFIG INFOS ############
-            # test with : {"userid": "{userid}","question_type_id": 1,"question_id": 1,"request_type": "get"}
+            # test with : {"userid": "{userid}" , "question_type_id": 1, "question_id": 1 ,"request_type": "get"}
             if request_type == 'get' :
                 object, config = get_interview_config_db(request_type, question_type_id, question_id, "getDBObject", userid)
-                # Convert the Answers object to a dictionary using model_to_dict
-                answer_dict = model_to_dict(object)
-                # Combine the serialized Answers object with the config
-
                 return Response(config, status=200)
             
   
@@ -199,9 +195,3 @@ class AnswersAPIView(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-
-
-
-
-
-
