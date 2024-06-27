@@ -159,7 +159,7 @@ class AnswersAPIView(APIView):
             request_data = request.data
             userid = request_data.get('userid')
             question_type_id = request_data.get('question_type_id')
-            question_nr = request_data.get('question_nr')
+            question_id = request_data.get('question_id')
             request_type = request_data.get('request_type')
             data_to_post = request_data.get('dataToPost', None)
             
@@ -175,9 +175,9 @@ class AnswersAPIView(APIView):
                     answers = Answers.objects.create(userid=user, data=interview_data)
 
 ############ GET CONFIG INFOS ############
-            # test with : {"userid": "{userid}","question_type_id": 1,"request_type": "get"}
+            # test with : {"userid": "{userid}","question_type_id": 1,"question_id": 1,"request_type": "get"}
             if request_type == 'get' :
-                object, config = get_interview_config_db(request_type, question_type_id, question_nr, "getDBObject", userid)
+                object, config = get_interview_config_db(request_type, question_type_id, question_id, "getDBObject", userid)
                 # Convert the Answers object to a dictionary using model_to_dict
                 answer_dict = model_to_dict(object)
                 # Combine the serialized Answers object with the config
@@ -186,13 +186,13 @@ class AnswersAPIView(APIView):
             
   
 ############# POST SELECTED ANSWERS TO DATA  ############
-            # test with : {"userid": "{userid}", "question_nr": 1, "question_type_id": 1, "request_type": "post", "dataToPost": ["Mathe", "Biologie", "Chemie"] }
+            # test with : {"userid": "{userid}", "question_id": 1, "question_type_id": 1, "request_type": "post", "dataToPost": ["Mathe", "Biologie", "Chemie"] }
             if request_type == 'post':
                 if data_to_post is None:
                     return Response({'error': 'Keine neuen Daten bereitgestellt.'}, status=status.HTTP_400_BAD_REQUEST)
                 
-                answer_post_view(question_type_id, question_nr, action='getDBObject', userID=userid, answer=data_to_post)
-                return Response({'success': f'Daten für Frage A{question_nr} erfolgreich aktualisiert.'}, status=status.HTTP_200_OK)
+                answer_post_view(question_type_id, question_id, action='getDBObject', userID=userid, answer=data_to_post)
+                return Response({'success': f'Daten für Frage A{question_id} erfolgreich aktualisiert.'}, status=status.HTTP_200_OK)
             else:
                 return Response({'error': 'Ungültiger request_type.'}, status=status.HTTP_400_BAD_REQUEST)
         
