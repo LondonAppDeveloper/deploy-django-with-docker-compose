@@ -12,6 +12,10 @@ from rest_framework.views import APIView
 from rest_framework.exceptions import AuthenticationFailed
 import jwt, datetime
 from .x_data_utils import get_all_interview_data_db, get_interview_config,  user_id
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.permissions import IsAuthenticated
+
 
 # Create your views here.
 class RegisterUserAPIView(APIView):
