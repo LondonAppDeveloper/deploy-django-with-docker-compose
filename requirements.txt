@@ -1,9 +1,9 @@
 Django>=3.2.3,<3.3
 psycopg2>=2.8.6,<2.9
 uWSGI>=2.0.19.1,<2.1
-django-cors-headers
-markdown
-djangorestframework
-pyjwt
-
+django-cors-headers == 4.4.0
+markdown == 3.6
+djangorestframework == 3.15.1
+pyjwt == 2.8.0
+djangorestframework-simplejwt == 5.3.1
 
